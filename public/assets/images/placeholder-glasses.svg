@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1100" viewBox="0 0 900 1100">
+  <rect width="900" height="1100" fill="#f1f4f6"/>
+  <g fill="none" stroke="#2b3437" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" opacity="0.86">
+    <rect x="145" y="490" width="235" height="145" rx="42"/>
+    <rect x="520" y="490" width="235" height="145" rx="42"/>
+    <path d="M380 560c43-25 97-25 140 0"/>
+    <path d="M145 548c-39-20-62-52-74-94"/>
+    <path d="M755 548c39-20 62-52 74-94"/>
+  </g>
+  <text x="450" y="715" text-anchor="middle" fill="#737c7f" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="6">LUMINA</text>
+</svg>

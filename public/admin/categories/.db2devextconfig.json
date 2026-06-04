@@ -1,0 +1,13 @@
+{
+    "index.php": {
+        "execute": {
+            "connectionOptions": "UseNewConnection",
+            "onSuccessOptions": "CommitOnEachStmt",
+            "onErrorOptions": "OnErrContinue",
+            "terminator": ";",
+            "currentSchema": "",
+            "currentPath": "",
+            "useUpperCaseOption": true
+        }
+    }
+}
