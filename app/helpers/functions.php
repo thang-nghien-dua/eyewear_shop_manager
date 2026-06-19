@@ -422,6 +422,7 @@ if (!function_exists('order_type_label')) {
             'available' => 'Có sẵn',
             'preorder' => 'Pre-order',
             'prescription' => 'Prescription',
+            'return_order' => 'Đơn hoàn',
             default => 'Không xác định',
         };
     }

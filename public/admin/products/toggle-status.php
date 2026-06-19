@@ -25,5 +25,6 @@ $newStatus = $current === 'active' ? 'inactive' : 'active';
 $update = $db->prepare('UPDATE products SET status = :status, updated_at = NOW() WHERE id = :id');
 $update->execute(['status' => $newStatus, 'id' => $id]);
 
+add_flash('success', $newStatus === 'active' ? 'Đã bật sản phẩm thành công.' : 'Đã ẩn sản phẩm thành công.');
 header('Location: ' . APP_URL . '/admin/products/index.php');
 exit;

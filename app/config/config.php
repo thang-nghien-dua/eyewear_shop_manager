@@ -12,3 +12,5 @@ define('BASE_PATH', dirname(__DIR__, 2));
 define('PUBLIC_PATH', BASE_PATH . '/public');
 
 require_once BASE_PATH . '/app/config/database.php';
+require_once BASE_PATH . '/app/config/vnpay.php';
+

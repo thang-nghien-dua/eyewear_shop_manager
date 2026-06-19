@@ -19,7 +19,7 @@ $allowedStatuses = [
     'pending', 'awaiting_stock', 'checking_prescription', 'confirmed', 'processing',
     'lens_processing', 'shipping', 'completed', 'cancelled', 'refunded',
 ];
-$allowedOrderTypes = ['available', 'preorder', 'prescription'];
+$allowedOrderTypes = ['available', 'preorder', 'prescription', 'return_order'];
 
 $where = [];
 $params = [];
@@ -154,47 +154,38 @@ include BASE_PATH . '/app/views/partials/admin-head.php';
                 <div class="alert warning"><?= e((string) $_GET['error']) ?></div>
             <?php endif; ?>
 
-            <section class="admin-panel">
-                <div class="admin-panel-head">
-                    <div>
-                        <span class="admin-panel-kicker">Filter workspace</span>
-                        <h2>Bộ lọc đơn hàng</h2>
-                        <p>Tìm kiếm theo mã đơn, khách hàng, email, số điện thoại hoặc phân loại theo trạng thái.</p>
+            <!-- Bộ lọc -->
+            <section class="admin-filter-card">
+                <form method="get" class="form-grid admin-filter-grid" action="<?= e(APP_URL) ?>/admin/orders/index.php">
+                    <div class="form-field">
+                        <label for="keyword">Từ khóa</label>
+                        <input id="keyword" type="text" name="keyword" value="<?= e($keyword) ?>" placeholder="Mã đơn, tên, email, số điện thoại">
                     </div>
-                </div>
-
-                <form class="admin-filter-card no-margin" method="get" action="<?= e(APP_URL) ?>/admin/orders/index.php">
-                    <div class="form-grid admin-filter-grid">
-                        <div class="form-field">
-                            <label for="keyword">Từ khóa</label>
-                            <input id="keyword" type="text" name="keyword" value="<?= e($keyword) ?>" placeholder="Mã đơn, tên, email, số điện thoại">
-                        </div>
-                        <div class="form-field">
-                            <label for="status">Trạng thái</label>
-                            <select id="status" name="status">
-                                <option value="">Tất cả trạng thái</option>
-                                <?php foreach ($allowedStatuses as $statusOption): ?>
-                                    <option value="<?= e($statusOption) ?>" <?= $statusOption === $status ? 'selected' : '' ?>>
-                                        <?= e(order_status_label($statusOption)) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-field">
-                            <label for="order_type">Loại đơn</label>
-                            <select id="order_type" name="order_type">
-                                <option value="">Tất cả loại đơn</option>
-                                <?php foreach ($allowedOrderTypes as $typeOption): ?>
-                                    <option value="<?= e($typeOption) ?>" <?= $typeOption === $orderType ? 'selected' : '' ?>>
-                                        <?= e(ucfirst($typeOption)) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-field form-field-actions">
-                            <button class="btn btn-primary" type="submit">Áp dụng</button>
-                            <a class="btn btn-secondary" href="<?= e(APP_URL) ?>/admin/orders/index.php">Xóa lọc</a>
-                        </div>
+                    <div class="form-field">
+                        <label for="status">Trạng thái</label>
+                        <select id="status" name="status">
+                            <option value="">Tất cả trạng thái</option>
+                            <?php foreach ($allowedStatuses as $statusOption): ?>
+                                <option value="<?= e($statusOption) ?>" <?= $statusOption === $status ? 'selected' : '' ?>>
+                                    <?= e(order_status_label($statusOption)) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="order_type">Loại đơn</label>
+                        <select id="order_type" name="order_type">
+                            <option value="">Tất cả loại đơn</option>
+                            <?php foreach ($allowedOrderTypes as $typeOption): ?>
+                                <option value="<?= e($typeOption) ?>" <?= $typeOption === $orderType ? 'selected' : '' ?>>
+                                    <?= e(order_type_label($typeOption)) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-field form-field-actions" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <button class="btn-primary" type="submit"><i class="fi fi-rr-search icon icon-sm"></i> Lọc đơn hàng</button>
+                        <a class="btn-outline" href="<?= e(APP_URL) ?>/admin/orders/index.php">Đặt lại</a>
                     </div>
                 </form>
             </section>
@@ -239,7 +230,7 @@ include BASE_PATH . '/app/views/partials/admin-head.php';
                                             <strong><?= e($order['customer_name']) ?></strong>
                                             <div class="muted-small"><?= e($order['customer_email']) ?></div>
                                         </td>
-                                        <td><span class="order-type-pill"><?= e(ucfirst((string) $order['order_type'])) ?></span></td>
+                                         <td><span class="order-type-pill"><?= e(order_type_label((string) $order['order_type'])) ?></span></td>
                                         <td>
                                             <span class="status-pill <?= e(order_status_class((string) $order['status'])) ?>">
                                                 <?= e(order_status_label((string) $order['status'])) ?>

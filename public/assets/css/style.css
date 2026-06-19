@@ -4638,3 +4638,283 @@ button { cursor: pointer; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================
+   LUMINA UI ENHANCEMENTS - v2 patches
+   ========================================================== */
+
+/* ---- FIX: Search/Account/Cart icon buttons in dark nav ---- */
+.nav-icon-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  line-height: 1 !important;
+}
+
+/* Nav menu link active underline */
+.nav-menu-link.active {
+  position: relative;
+  color: #f5b700 !important;
+}
+.nav-menu-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 1rem;
+  right: 1rem;
+  height: 2px;
+  background: #f5b700;
+  border-radius: 2px;
+}
+
+/* ---- Improved Login / Register page ---- */
+.auth-wrap {
+  background: #fff;
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 60px rgba(26,46,74,.1), 0 1px 3px rgba(0,0,0,.06);
+  border: 1px solid rgba(26,46,74,.06);
+}
+.auth-form .form-field label {
+  font-size: 0.85rem;
+  color: #4a5568;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.auth-form .form-field input {
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  transition: border-color .2s, box-shadow .2s;
+  font-size: 1rem;
+}
+.auth-form .form-field input:focus {
+  border-color: #1a2e4a;
+  box-shadow: 0 0 0 3px rgba(26,46,74,.1);
+  outline: none;
+}
+.auth-form button[type="submit"] {
+  background: linear-gradient(135deg, #1a2e4a 0%, #2d4563 100%) !important;
+  color: #f5b700 !important;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  min-height: 50px;
+  border-radius: 10px !important;
+  width: 100%;
+  margin-top: 0.5rem;
+  transition: all .25s ease;
+  box-shadow: 0 4px 15px rgba(26,46,74,.25);
+}
+.auth-form button[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(26,46,74,.3);
+}
+.auth-footnote {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #edf2f7;
+  font-size: 0.9rem;
+  color: #718096;
+  line-height: 1.8;
+}
+.auth-footnote a {
+  color: #1a2e4a;
+  font-weight: 600;
+  text-decoration: underline;
+}
+.auth-footnote .muted-text {
+  font-size: 0.82rem;
+  color: #a0aec0;
+}
+.muted-text {
+  color: #a0aec0;
+  font-size: 0.85rem;
+}
+
+/* ---- Improved Cart page ---- */
+.cart-items-card {
+  border-radius: 20px;
+}
+.cart-item-row {
+  transition: background .15s;
+  border-radius: 12px;
+  padding: 16px 8px;
+}
+.cart-item-row:hover {
+  background: #f7fafc;
+}
+
+/* ---- Improved Checkout + Order pages ---- */
+.checkout-form-card,
+.checkout-summary-card {
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.06);
+}
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: #1a2e4a;
+  box-shadow: 0 0 0 3px rgba(26,46,74,.1);
+  outline: none;
+}
+
+/* ---- Enhanced Product Cards (catalog page) ---- */
+.atelier-product-card {
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease;
+}
+.atelier-product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.12);
+}
+.atelier-heart {
+  transition: transform .2s, opacity .2s;
+}
+.atelier-product-card:hover .atelier-heart {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+/* ---- Scroll-to-top button ---- */
+#scroll-top-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 999;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #1a2e4a;
+  color: #f5b700;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(26,46,74,.3);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .3s, transform .3s;
+  pointer-events: none;
+}
+#scroll-top-btn.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#scroll-top-btn:hover {
+  background: #f5b700;
+  color: #1a2e4a;
+  transform: translateY(-3px);
+}
+
+/* ---- Page-wide toast notification ---- */
+.lumina-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1a2e4a;
+  color: #fff;
+  padding: .85rem 1.75rem;
+  border-radius: 50px;
+  font-size: .95rem;
+  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(26,46,74,.25);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity .3s, transform .3s;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+.lumina-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.lumina-toast.success { border-left: 4px solid #38a169; }
+.lumina-toast.error { border-left: 4px solid #e53e3e; }
+
+/* ---- Improved Footer ---- */
+.site-footer {
+  background: #f8f9fa;
+  border-top: 1px solid #e2e8f0;
+}
+.footer-grid h3, .footer-grid h4 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #1a2e4a;
+}
+.footer-grid ul li a {
+  transition: color .2s;
+}
+.footer-grid ul li a:hover {
+  color: #1a2e4a;
+}
+.footer-bottom {
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ---- Cart badge pulse ---- */
+.cart-badge-source {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #f5b700;
+  color: #1a2e4a;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  animation: badge-pop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes badge-pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+/* ---- Sale page image improvements ---- */
+.sale-hero-img {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+  max-height: 480px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.12);
+}
+
+/* ---- Profile page button hover enhancement ---- */
+.btn-view:hover {
+  transform: translateX(2px);
+}
+
+/* ---- Smooth page links ---- */
+a {
+  transition: opacity .15s;
+}
+
+/* ---- Input placeholder color ---- */
+::placeholder {
+  color: #a0aec0;
+  opacity: 1;
+}
+
+/* ---- Alert improvements ---- */
+.alert {
+  border-radius: 12px;
+  border-left: 4px solid currentColor;
+  font-weight: 500;
+}
+.alert.success { border-left-color: #38a169; }
+.alert.warning { border-left-color: #d69e2e; }
+.alert.info    { border-left-color: #3182ce; }
+

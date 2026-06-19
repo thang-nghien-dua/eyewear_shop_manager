@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $errors[] = 'Email hoặc mật khẩu không đúng.';
+        } elseif ($user['status'] !== 'active') {
+            $errors[] = 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin@gmail.com để được hỗ trợ.';
         } else {
             login_user($user);
             add_flash('success', 'Đăng nhập thành công.');

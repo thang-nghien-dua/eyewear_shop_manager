@@ -294,7 +294,7 @@ CREATE TABLE orders (
     user_id BIGINT UNSIGNED NOT NULL,
     handled_by BIGINT UNSIGNED NULL,
     order_code VARCHAR(30) NOT NULL UNIQUE,
-    order_type ENUM('available', 'preorder', 'prescription') NOT NULL DEFAULT 'available',
+    order_type ENUM('available', 'preorder', 'prescription', 'return_order') NOT NULL DEFAULT 'available',
     status ENUM(
         'pending',
         'awaiting_stock',
@@ -410,6 +410,7 @@ CREATE TABLE return_requests (
     request_type ENUM('return', 'exchange', 'warranty', 'refund') NOT NULL DEFAULT 'return',
     status ENUM('pending', 'approved', 'rejected', 'received', 'resolved') NOT NULL DEFAULT 'pending',
     resolution_note TEXT NULL,
+    images JSON NULL COMMENT 'Mảng tối đa 3 đường dẫn ảnh',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_return_requests_order

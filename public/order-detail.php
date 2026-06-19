@@ -11,6 +11,12 @@ if ($orderCode === '') {
     exit;
 }
 
+// Lấy lỗi form đổi trả từ session (nếu có - do handle-return.php đặt vào)
+$returnFormErrors = $_SESSION['return_form_errors'] ?? [];
+$returnFormData   = $_SESSION['return_form_data']   ?? [];
+unset($_SESSION['return_form_errors'], $_SESSION['return_form_data']);
+
+
 $orderStmt = $db->prepare(
     "SELECT o.*, u.full_name AS account_name
      FROM orders o
@@ -143,6 +149,34 @@ include BASE_PATH . '/app/views/partials/header.php';
             );
             $logStmt->execute(['order_id' => $order['id']]);
             $statusLogs = $logStmt->fetchAll();
+
+            // Lấy yêu cầu đổi trả/bảo hành nếu có
+            $returnRequestStmt = $db->prepare('SELECT * FROM return_requests WHERE order_id = :order_id LIMIT 1');
+            $returnRequestStmt->execute(['order_id' => $order['id']]);
+            $returnRequest = $returnRequestStmt->fetch();
+
+            // Lấy thông tin sản phẩm trong đơn để hiển thị nút đánh giá
+            $reviewableItems = [];
+            if ($order['status'] === 'completed' && is_logged_in()) {
+                $uid = auth_user()['id'];
+                try {
+                    $reviewItemStmt = $db->prepare("
+                        SELECT DISTINCT
+                            oi.product_name,
+                            pv.product_id,
+                            p.id AS pid,
+                            p.slug AS product_slug,
+                            (SELECT COUNT(*) FROM product_reviews pr
+                             WHERE pr.user_id = :uid AND pr.product_id = pv.product_id) AS already_reviewed
+                        FROM order_items oi
+                        INNER JOIN product_variants pv ON pv.id = oi.product_variant_id
+                        INNER JOIN products p ON p.id = pv.product_id
+                        WHERE oi.order_id = :order_id
+                    ");
+                    $reviewItemStmt->execute(['uid' => $uid, 'order_id' => $order['id']]);
+                    $reviewableItems = $reviewItemStmt->fetchAll();
+                } catch (\Throwable $e) { /* Bảng chưa tồn tại */ }
+            }
             ?>
 
             <div class="order-detail-layout">
@@ -260,20 +294,42 @@ include BASE_PATH . '/app/views/partials/header.php';
                         <?php endif; ?>
                     </section>
 
-                    <section class="order-detail-card order-side-card">
-                        <div class="section-heading-row compact">
-                            <h2>Tổng thanh toán</h2>
-                        </div>
-                        <div class="summary-row"><span>Tạm tính</span><strong><?= format_price($order['subtotal']) ?></strong></div>
-                        <div class="summary-row"><span>Tiền tròng</span><strong><?= format_price($order['lens_total']) ?></strong></div>
-                        <div class="summary-row"><span>Phí giao hàng</span><strong><?= format_price($order['shipping_fee']) ?></strong></div>
-                        <div class="summary-row"><span>Giảm giá</span><strong><?= format_price($order['discount_amount']) ?></strong></div>
-                        <div class="summary-row total"><span>Tổng cộng</span><strong><?= format_price($order['total_amount']) ?></strong></div>
-                    </section>
-                </aside>
+                     <section class="order-detail-card order-side-card">
+                         <div class="section-heading-row compact">
+                             <h2>Tổng thanh toán</h2>
+                         </div>
+                         <div class="summary-row"><span>Tạm tính</span><strong><?= format_price($order['subtotal']) ?></strong></div>
+                         <div class="summary-row"><span>Tiền tròng</span><strong><?= format_price($order['lens_total']) ?></strong></div>
+                         <div class="summary-row"><span>Phí giao hàng</span><strong><?= format_price($order['shipping_fee']) ?></strong></div>
+                         <div class="summary-row"><span>Giảm giá</span><strong><?= format_price($order['discount_amount']) ?></strong></div>
+                         <div class="summary-row total"><span>Tổng cộng</span><strong><?= format_price($order['total_amount']) ?></strong></div>
+                     </section>
+                         </section>
+                     <?php endif; ?>
+                 </aside>
             </div>
         <?php endif; ?>
     </div>
 </main>
 
 <?php include BASE_PATH . '/app/views/partials/footer.php'; ?>
+
+<?php if (($_GET['scrollto'] ?? '') === 'return'): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('return-section');
+    if (el) {
+        setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 300);
+    }
+});
+</script>
+<?php endif; ?>
+<?php if (!empty($_GET['scrollto'])): ?>
+<script>
+// Hiện flash success nếu có
+(function () {
+    var flash = document.querySelector('.alert.success, .flash-success');
+    if (flash) { flash.scrollIntoView({ behavior: 'smooth' }); }
+})();
+</script>
+<?php endif; ?>

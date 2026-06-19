@@ -108,7 +108,7 @@ require_once BASE_PATH . '/app/views/partials/admin-head.php';
             </div>
 
             <section class="admin-filter-card">
-                <form method="get" class="form-grid two-cols admin-filter-grid">
+                <form method="get" class="form-grid admin-filter-grid" action="<?= e(APP_URL) ?>/admin/categories/index.php">
                     <div class="form-field">
                         <label for="keyword">Từ khóa</label>
                         <input id="keyword" name="keyword" value="<?= e($keyword) ?>" placeholder="Tên, slug hoặc mô tả">
@@ -117,7 +117,7 @@ require_once BASE_PATH . '/app/views/partials/admin-head.php';
                     <div class="form-field">
                         <label for="type">Loại danh mục</label>
                         <select id="type" name="type">
-                            <option value="">Tất cả</option>
+                            <option value="">Tất cả loại danh mục</option>
                             <?php foreach (['frame' => 'Gọng kính', 'sunglasses' => 'Kính mát', 'lens' => 'Tròng kính', 'other' => 'Khác'] as $value => $label): ?>
                                 <option value="<?= e($value) ?>" <?= $type === $value ? 'selected' : '' ?>><?= e($label) ?></option>
                             <?php endforeach; ?>
@@ -127,14 +127,14 @@ require_once BASE_PATH . '/app/views/partials/admin-head.php';
                     <div class="form-field">
                         <label for="active">Trạng thái</label>
                         <select id="active" name="active">
-                            <option value="">Tất cả</option>
+                            <option value="">Tất cả trạng thái</option>
                             <option value="1" <?= $active === '1' ? 'selected' : '' ?>>Đang bật</option>
                             <option value="0" <?= $active === '0' ? 'selected' : '' ?>>Đang ẩn</option>
                         </select>
                     </div>
 
-                    <div class="form-field form-field-actions">
-                        <button class="btn-primary" type="submit"><i class="fi fi-rr-search icon icon-sm"></i>Lọc danh mục</button>
+                    <div class="form-field form-field-actions" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <button class="btn-primary" type="submit"><i class="fi fi-rr-search icon icon-sm"></i> Lọc danh mục</button>
                         <a class="btn-outline" href="<?= e(APP_URL) ?>/admin/categories/index.php">Đặt lại</a>
                     </div>
                 </form>

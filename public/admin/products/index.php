@@ -98,15 +98,9 @@ require BASE_PATH . '/app/views/partials/admin-head.php';
                 </div>
             </div>
 
-            <div class="admin-panel">
-                <div class="admin-panel-head compact">
-                    <div>
-                        <span class="admin-panel-kicker">BỘ LỌC</span>
-                        <h2>Lọc và tìm kiếm</h2>
-                    </div>
-                </div>
-
-                <form method="get" class="form-grid two-cols admin-filter-grid">
+            <!-- Bộ lọc -->
+            <section class="admin-filter-card">
+                <form method="get" class="form-grid admin-filter-grid" action="<?= e(APP_URL) ?>/admin/products/index.php">
                     <div class="form-field">
                         <label for="keyword">Từ khóa</label>
                         <input id="keyword" type="text" name="keyword" value="<?= e($keyword) ?>" placeholder="Tên, slug, brand...">
@@ -125,18 +119,18 @@ require BASE_PATH . '/app/views/partials/admin-head.php';
                     <div class="form-field">
                         <label for="status">Trạng thái</label>
                         <select id="status" name="status">
-                            <option value="">Tất cả</option>
+                            <option value="">Tất cả trạng thái</option>
                             <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Active</option>
                             <option value="inactive" <?= $status === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                             <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
                         </select>
                     </div>
-                    <div class="form-field form-field-actions full-width">
-                        <button type="submit" class="btn-primary">Tìm kiếm</button>
-                        <a class="btn-outline" href="<?= e(APP_URL) ?>/admin/products/index.php">Xóa bộ lọc</a>
+                    <div class="form-field form-field-actions" style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <button class="btn-primary" type="submit"><i class="fi fi-rr-search icon icon-sm"></i> Lọc sản phẩm</button>
+                        <a class="btn-outline" href="<?= e(APP_URL) ?>/admin/products/index.php">Đặt lại</a>
                     </div>
                 </form>
-            </div>
+            </section>
 
             <div class="admin-panel">
                 <div class="admin-panel-head compact">

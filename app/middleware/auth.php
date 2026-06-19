@@ -5,14 +5,14 @@ require_once BASE_PATH . '/app/helpers/functions.php';
 if (!function_exists('is_logged_in')) {
     function is_logged_in(): bool
     {
-        return !empty($_SESSION['user']);
+        return !empty($_SESSION['auth_user']) || !empty($_SESSION['user']);
     }
 }
 
 if (!function_exists('current_user')) {
     function current_user(): ?array
     {
-        return $_SESSION['user'] ?? null;
+        return $_SESSION['auth_user'] ?? $_SESSION['user'] ?? null;
     }
 }
 

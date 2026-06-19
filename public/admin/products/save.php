@@ -27,7 +27,8 @@ $targetGender = trim((string)($_POST['target_gender'] ?? ''));
 $material = trim((string)($_POST['material'] ?? ''));
 $shape = trim((string)($_POST['shape'] ?? ''));
 $defaultPrice = (float)($_POST['default_price'] ?? 0);
-$compareAtPrice = $_POST['compare_at_price'] !== '' ? (float)$_POST['compare_at_price'] : null;
+$compareAtPriceRaw = trim((string)($_POST['compare_at_price'] ?? ''));
+$compareAtPrice = $compareAtPriceRaw !== '' ? (float)$compareAtPriceRaw : null;
 $thumbnail = trim((string)($_POST['thumbnail'] ?? ''));
 $isPrescriptionSupported = (int)($_POST['is_prescription_supported'] ?? 0);
 $has3dModel = (int)($_POST['has_3d_model'] ?? 0);
@@ -101,8 +102,18 @@ if ($id > 0) {
     )';
 }
 
-$stmt = $db->prepare($sql);
-$stmt->execute($params);
+try {
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+} catch (PDOException $e) {
+    // Redirect back with error message in query string
+    $backUrl = APP_URL . '/admin/products/edit.php' . ($id > 0 ? '?id=' . $id : '');
+    add_flash('error', 'Lỗi khi lưu sản phẩm: ' . $e->getMessage());
+    header('Location: ' . $backUrl);
+    exit;
+}
 
+$newId = $id > 0 ? $id : (int)$db->lastInsertId();
+add_flash('success', $id > 0 ? 'Đã cập nhật sản phẩm thành công.' : 'Đã thêm sản phẩm mới thành công.');
 header('Location: ' . APP_URL . '/admin/products/index.php');
 exit;

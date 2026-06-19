@@ -57,6 +57,77 @@ if (empty($galleryImages)) {
     $galleryImages = [['image_url' => $product['thumbnail'], 'alt_text' => $product['name']]];
 }
 
+// ── Reviews data ────────────────────────────────────────────────────
+$reviews        = [];
+$reviewStats    = ['avg' => 0, 'count' => 0, 'dist' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0]];
+$canReview      = false;
+$hasReviewed    = false;
+$eligibleOrder  = null;
+
+try {
+    $revStmt = $db->prepare("
+        SELECT r.*, u.full_name AS reviewer_name
+        FROM product_reviews r
+        INNER JOIN users u ON u.id = r.user_id
+        WHERE r.product_id = :pid AND r.status = 'approved'
+        ORDER BY r.created_at DESC
+        LIMIT 20
+    ");
+    $revStmt->execute(['pid' => $product['id']]);
+    $reviews = $revStmt->fetchAll();
+
+    $statStmt = $db->prepare("
+        SELECT AVG(rating) AS avg_rating, COUNT(*) AS total,
+               SUM(rating = 5) AS r5, SUM(rating = 4) AS r4,
+               SUM(rating = 3) AS r3, SUM(rating = 2) AS r2,
+               SUM(rating = 1) AS r1
+        FROM product_reviews
+        WHERE product_id = :pid AND status = 'approved'
+    ");
+    $statStmt->execute(['pid' => $product['id']]);
+    $statRow = $statStmt->fetch();
+    if ($statRow && $statRow['total'] > 0) {
+        $reviewStats = [
+            'avg'   => round((float) $statRow['avg_rating'], 1),
+            'count' => (int) $statRow['total'],
+            'dist'  => [
+                5 => (int) $statRow['r5'],
+                4 => (int) $statRow['r4'],
+                3 => (int) $statRow['r3'],
+                2 => (int) $statRow['r2'],
+                1 => (int) $statRow['r1'],
+            ],
+        ];
+    }
+
+    if (is_logged_in()) {
+        $uid = auth_user()['id'];
+        // Đã đánh giá chưa?
+        $doneStmt = $db->prepare('SELECT id FROM product_reviews WHERE user_id = :uid AND product_id = :pid');
+        $doneStmt->execute(['uid' => $uid, 'pid' => $product['id']]);
+        $hasReviewed = (bool) $doneStmt->fetchColumn();
+
+        // Có đơn completed chứa sản phẩm này không?
+        if (!$hasReviewed) {
+            $eligStmt = $db->prepare("
+                SELECT o.id
+                FROM orders o
+                INNER JOIN order_items oi ON oi.order_id = o.id
+                INNER JOIN product_variants pv ON pv.id = oi.product_variant_id
+                WHERE o.user_id = :uid AND pv.product_id = :pid AND o.status = 'completed'
+                LIMIT 1
+            ");
+            $eligStmt->execute(['uid' => $uid, 'pid' => $product['id']]);
+            $eligibleOrder = $eligStmt->fetchColumn();
+            $canReview = (bool) $eligibleOrder;
+        }
+    }
+} catch (\Throwable $e) { /* Bảng chưa tồn tại */ }
+
+$reviewErrors  = flash_get('review_errors', []);
+$reviewOld     = flash_get('review_old', []);
+$reviewSuccess = get_flash('success'); // Bước 15: thông báo gửi đánh giá thành công
+
 $pageTitle = $product['name'] . ' - ' . APP_NAME;
 $pageDescription = $product['short_description'] ?: 'Chi tiết sản phẩm LUMINA.';
 require_once BASE_PATH . '/app/views/partials/head.php';
@@ -848,6 +919,198 @@ require_once BASE_PATH . '/app/views/partials/header.php';
     </div>
     <?php endif; ?>
 
+    <!-- ══════════════════════════════════════════════════════════
+         SECTION: Product Reviews & Ratings
+         ══════════════════════════════════════════════════════════ -->
+    <div id="reviews" style="margin-top:2.5rem; scroll-margin-top:90px;">
+      <style>
+      .rev-section { background:#fff; border-radius:16px; border:1px solid #e4ebee; overflow:hidden; }
+      .rev-header { padding:1.75rem 2rem; border-bottom:1px solid #f0f3f5; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
+      .rev-header h2 { font-size:1.15rem;font-weight:800;color:#1a2e4a;margin:0; }
+      .rev-summary { display:flex; gap:2rem; align-items:center; }
+      .rev-avg-block { text-align:center; }
+      .rev-avg-num { font-size:3rem; font-weight:900; color:#1a2e4a; line-height:1; }
+      .rev-avg-stars { display:flex; gap:2px; justify-content:center; margin:.35rem 0 .2rem; }
+      .rev-avg-stars .s { font-size:1.1rem; color:#f59e0b; }
+      .rev-avg-stars .s.empty { color:#e2e8f0; }
+      .rev-avg-count { font-size:.8rem; color:#9aa3a6; }
+      .rev-dist { flex:1; min-width:180px; }
+      .rev-dist-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.3rem; font-size:.78rem; }
+      .rev-dist-bar-wrap { flex:1; height:6px; background:#f0f3f5; border-radius:3px; overflow:hidden; }
+      .rev-dist-bar { height:100%; background:linear-gradient(90deg,#f59e0b,#fbbf24); border-radius:3px; transition:width .4s; }
+      .rev-dist-label { min-width:18px; color:#718096; }
+      .rev-dist-count { min-width:18px; color:#9aa3a6; text-align:right; }
+
+      .rev-list { padding:1.5rem 2rem; }
+      .rev-item { padding:1.25rem 0; border-bottom:1px solid #f0f3f5; }
+      .rev-item:last-child { border-bottom:none; }
+      .rev-item-header { display:flex; gap:.75rem; align-items:flex-start; margin-bottom:.75rem; }
+      .rev-avatar { width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1a2e4a,#2a4365);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;flex:0 0 38px; }
+      .rev-meta { flex:1; }
+      .rev-name { font-weight:700;font-size:.88rem;color:#1a2e4a; }
+      .rev-date { font-size:.75rem;color:#9aa3a6; }
+      .rev-stars { display:flex;gap:1px;margin:.2rem 0; }
+      .rev-stars .s { font-size:.9rem;color:#f59e0b; }
+      .rev-stars .s.empty { color:#e2e8f0; }
+      .rev-title { font-weight:700;font-size:.9rem;color:#1a2e4a;margin-bottom:.35rem; }
+      .rev-body { font-size:.88rem;color:#4a5568;line-height:1.65; }
+      .rev-photos { display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap; }
+      .rev-photo { width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid #e2e8f0;cursor:pointer;transition:.15s; }
+      .rev-photo:hover { border-color:#1a2e4a; }
+
+      .btn-write-review {
+        padding:.65rem 1.4rem; border:2px solid #d4880a; border-radius:8px;
+        background:#fff; color:#d4880a; font-weight:800; font-size:.88rem;
+        cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:.5rem;
+      }
+      .btn-write-review:hover { background:#d4880a; color:#fff; }
+
+      /* Review form modal */
+      .rev-modal-backdrop { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px); }
+      .rev-modal-backdrop.open { display:flex; }
+      .rev-modal { background:#fff;border-radius:16px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:revModalIn .25s ease; }
+      @keyframes revModalIn { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
+      .rev-modal h3 { font-size:1.2rem;font-weight:800;color:#1a2e4a;margin:0 0 1.25rem; }
+
+      .star-picker { display:flex;gap:.35rem;margin:.5rem 0 1rem;flex-direction:row-reverse;justify-content:flex-end; }
+      .star-picker input { display:none; }
+      .star-picker label { font-size:2rem;cursor:pointer;color:#e2e8f0;transition:color .15s; }
+      .star-picker input:checked ~ label,
+      .star-picker label:hover,
+      .star-picker label:hover ~ label { color:#f59e0b; }
+
+      .rev-form-group { margin-bottom:1rem; }
+      .rev-form-group label { display:block;font-size:.82rem;font-weight:700;color:#4a5568;margin-bottom:.35rem; }
+      .rev-form-group input, .rev-form-group textarea {
+        width:100%;padding:.6rem .8rem;border:1.5px solid #dbe4e7;border-radius:8px;
+        font-size:.9rem;outline:none;transition:border-color .2s;background:#f8fafc;
+        box-sizing:border-box;
+      }
+      .rev-form-group input:focus, .rev-form-group textarea:focus { border-color:#1a2e4a;background:#fff; }
+      .rev-photo-upload-area {
+        border:2px dashed #dbe4e7;border-radius:8px;padding:1.25rem;text-align:center;
+        cursor:pointer;transition:.2s;color:#9aa3a6;font-size:.85rem;
+      }
+      .rev-photo-upload-area:hover { border-color:#1a2e4a;color:#1a2e4a;background:#f0f7ff; }
+      .rev-photo-previews { display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem; }
+      .rev-preview-img { width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid #e2e8f0;position:relative; }
+      .rev-modal-actions { display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem; }
+      .btn-rev-cancel { padding:.6rem 1.25rem;border:1.5px solid #dbe4e7;border-radius:8px;background:#fff;color:#718096;font-weight:700;cursor:pointer; }
+      .btn-rev-submit { padding:.6rem 1.5rem;border:none;border-radius:8px;background:#1a2e4a;color:#fff;font-weight:800;cursor:pointer;transition:.2s; }
+      .btn-rev-submit:hover { background:#2d4563; }
+
+      /* Lightbox */
+      .rev-lightbox { display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center; }
+      .rev-lightbox.show { display:flex; }
+      .rev-lightbox img { max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain; }
+      .rev-lightbox-close { position:absolute;top:1.5rem;right:1.5rem;color:#fff;font-size:2rem;cursor:pointer; }
+
+      .empty-reviews { text-align:center;padding:3rem 1rem;color:#a0aec0; }
+      </style>
+
+      <div class="rev-section">
+        <div class="rev-header">
+          <div style="display:flex;flex-direction:column;gap:.35rem;">
+            <h2>⭐ Đánh giá từ khách hàng</h2>
+            <?php if ($reviewStats['count'] > 0): ?>
+              <p style="margin:0;font-size:.83rem;color:#718096;"><?= $reviewStats['count'] ?> đánh giá từ khách đã mua</p>
+            <?php endif; ?>
+          </div>
+
+          <?php if ($canReview): ?>
+            <button class="btn-write-review" onclick="openRevModal()">
+              ✍️ Viết đánh giá
+            </button>
+          <?php elseif ($hasReviewed): ?>
+            <span style="font-size:.82rem;color:#10b981;font-weight:700;">✅ Bạn đã đánh giá sản phẩm này</span>
+          <?php elseif (!is_logged_in()): ?>
+            <a href="<?= e(APP_URL) ?>/login.php" style="font-size:.82rem;color:#d4880a;font-weight:700;text-decoration:none;">Đăng nhập để đánh giá →</a>
+          <?php endif; ?>
+        </div>
+
+        <?php if ($reviewStats['count'] > 0): ?>
+        <div style="padding:1.25rem 2rem;border-bottom:1px solid #f0f3f5;">
+          <div class="rev-summary">
+            <div class="rev-avg-block">
+              <div class="rev-avg-num"><?= number_format($reviewStats['avg'], 1) ?></div>
+              <div class="rev-avg-stars">
+                <?php for ($s = 1; $s <= 5; $s++): ?>
+                  <span class="s <?= $s > round($reviewStats['avg']) ? 'empty' : '' ?>">★</span>
+                <?php endfor; ?>
+              </div>
+              <div class="rev-avg-count"><?= $reviewStats['count'] ?> đánh giá</div>
+            </div>
+            <div class="rev-dist">
+              <?php foreach (array_reverse([1,2,3,4,5]) as $star): ?>
+                <?php $pct = $reviewStats['count'] > 0 ? round($reviewStats['dist'][$star] / $reviewStats['count'] * 100) : 0; ?>
+                <div class="rev-dist-row">
+                  <span class="rev-dist-label"><?= $star ?>★</span>
+                  <div class="rev-dist-bar-wrap"><div class="rev-dist-bar" style="width:<?= $pct ?>%;"></div></div>
+                  <span class="rev-dist-count"><?= $reviewStats['dist'][$star] ?></span>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($reviewErrors)): ?>
+          <div class="alert warning" style="margin:1rem 2rem;border-radius:8px;">
+            <?php foreach ($reviewErrors as $e): ?><p><?= e($e) ?></p><?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($reviewSuccess): ?>
+          <div class="alert success" style="margin:1rem 2rem;border-radius:8px;padding:.85rem 1.1rem;background:#f0fdf4;border:1.5px solid #86efac;color:#15803d;font-weight:700;display:flex;align-items:center;gap:.5rem;">
+            ✅ <?= e($reviewSuccess) ?>
+          </div>
+        <?php endif; ?>
+
+        <div class="rev-list">
+          <?php if (empty($reviews)): ?>
+            <div class="empty-reviews">
+              <div style="font-size:3rem;margin-bottom:.75rem;">💬</div>
+              <p style="font-size:.9rem;font-weight:600;">Chưa có đánh giá nào được phê duyệt.</p>
+              <?php if ($canReview): ?>
+                <p style="font-size:.83rem;">Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!</p>
+              <?php endif; ?>
+            </div>
+          <?php else: ?>
+            <?php foreach ($reviews as $rev): ?>
+              <?php
+                $revImgs   = !empty($rev['images']) ? (array) json_decode($rev['images'], true) : [];
+                $initials  = mb_strtoupper(mb_substr($rev['reviewer_name'], 0, 2));
+                $anonName  = mb_substr($rev['reviewer_name'], 0, 1) . str_repeat('*', max(1, mb_strlen($rev['reviewer_name']) - 2)) . mb_substr($rev['reviewer_name'], -1);
+              ?>
+              <div class="rev-item">
+                <div class="rev-item-header">
+                  <div class="rev-avatar"><?= e($initials) ?></div>
+                  <div class="rev-meta">
+                    <div class="rev-name"><?= e($anonName) ?></div>
+                    <div class="rev-stars"><?php for ($s=1;$s<=5;$s++): ?><span class="s <?= $s > $rev['rating'] ? 'empty' : '' ?>">★</span><?php endfor; ?></div>
+                    <div class="rev-date"><?= e(date('d/m/Y', strtotime((string)$rev['created_at']))) ?></div>
+                  </div>
+                </div>
+                <?php if (!empty($rev['title'])): ?>
+                  <div class="rev-title"><?= e($rev['title']) ?></div>
+                <?php endif; ?>
+                <?php if (!empty($rev['body'])): ?>
+                  <div class="rev-body"><?= nl2br(e($rev['body'])) ?></div>
+                <?php endif; ?>
+                <?php if (!empty($revImgs)): ?>
+                  <div class="rev-photos">
+                    <?php foreach ($revImgs as $imgPath): ?>
+                      <img class="rev-photo" src="<?= e(APP_URL . $imgPath) ?>" alt="Review photo" onclick="openRevLightbox('<?= e(APP_URL . $imgPath) ?>')">
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
     <!-- Related products -->
     <?php if ($related): ?>
     <div class="pd-related">
@@ -874,6 +1137,104 @@ require_once BASE_PATH . '/app/views/partials/header.php';
 
   </div><!-- /.pd-container -->
 </div><!-- /.pd-page -->
+
+<!-- Review Write Modal -->
+<?php if ($canReview): ?>
+<div class="rev-modal-backdrop" id="revModalBackdrop">
+  <div class="rev-modal">
+    <h3>✍️ Viết đánh giá của bạn</h3>
+    <p style="font-size:.83rem;color:#718096;margin-bottom:1.25rem;margin-top:-.75rem;">Chia sẻ trải nghiệm thực tế của bạn với sản phẩm này.</p>
+
+    <form method="POST" action="<?= e(APP_URL) ?>/submit-review.php" enctype="multipart/form-data">
+      <input type="hidden" name="product_id" value="<?= (int) $product['id'] ?>">
+
+      <!-- Star rating picker -->
+      <div class="rev-form-group">
+        <label>Chấm điểm *</label>
+        <div class="star-picker">
+          <?php for ($i = 5; $i >= 1; $i--): ?>
+            <input type="radio" name="rating" id="star<?= $i ?>" value="<?= $i ?>" <?= ((int)($reviewOld['rating'] ?? 5)) === $i ? 'checked' : '' ?>>
+            <label for="star<?= $i ?>">★</label>
+          <?php endfor; ?>
+        </div>
+      </div>
+
+      <div class="rev-form-group">
+        <label for="revTitle">Tiêu đề ngắn</label>
+        <input type="text" id="revTitle" name="title" maxlength="200" value="<?= e((string)($reviewOld['title'] ?? '')) ?>" placeholder="Ví dụ: Kính rất đẹp và nhẹ!">
+      </div>
+
+      <div class="rev-form-group">
+        <label for="revBody">Nhận xét chi tiết *</label>
+        <textarea id="revBody" name="body" rows="4" required placeholder="Chia sẻ cảm nhận về chất lượng, độ vừa vặn, kiểu dáng..."><?= e((string)($reviewOld['body'] ?? '')) ?></textarea>
+      </div>
+
+      <div class="rev-form-group">
+        <label>Ảnh thực tế (tối đa 3 ảnh, mỗi ảnh ≤ 5MB)</label>
+        <div class="rev-photo-upload-area" onclick="document.getElementById('revImages').click()">
+          <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="margin:0 auto .5rem;display:block;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Nhấp để chọn ảnh (JPG, PNG, WebP)
+          <input type="file" id="revImages" name="review_images[]" accept="image/*" multiple style="display:none;" onchange="previewRevImages(this)">
+        </div>
+        <div class="rev-photo-previews" id="revPhotoPreviews"></div>
+      </div>
+
+      <div class="rev-modal-actions">
+        <button type="button" class="btn-rev-cancel" onclick="closeRevModal()">Hủy</button>
+        <button type="submit" class="btn-rev-submit">📤 Gửi đánh giá</button>
+      </div>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Lightbox for review images -->
+<div class="rev-lightbox" id="revLightbox" onclick="closeRevLightbox()">
+  <span class="rev-lightbox-close">×</span>
+  <img id="revLightboxImg" src="" alt="">
+</div>
+
+<script>
+function openRevModal() {
+  document.getElementById('revModalBackdrop').classList.add('open');
+}
+function closeRevModal() {
+  document.getElementById('revModalBackdrop').classList.remove('open');
+}
+document.getElementById('revModalBackdrop')?.addEventListener('click', function(e) {
+  if (e.target === this) closeRevModal();
+});
+
+function previewRevImages(input) {
+  const container = document.getElementById('revPhotoPreviews');
+  container.innerHTML = '';
+  const files = Array.from(input.files).slice(0, 3);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'rev-preview-img';
+      container.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openRevLightbox(src) {
+  document.getElementById('revLightboxImg').src = src;
+  document.getElementById('revLightbox').classList.add('show');
+}
+function closeRevLightbox() {
+  document.getElementById('revLightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeRevModal(); closeRevLightbox(); } });
+
+// Auto-open review modal if redirected here after error
+<?php if (!empty($reviewErrors)): ?>
+document.addEventListener('DOMContentLoaded', () => openRevModal());
+<?php endif; ?>
+</script>
 
 <!-- Toast notification -->
 <div class="pd-toast" id="pdToast">

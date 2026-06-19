@@ -113,11 +113,7 @@ if ($categoryParam !== '') {
     $category = $catStmt->fetch() ?: null;
 }
 
-if (!$category) {
-    $catStmt = $db->prepare("SELECT * FROM categories WHERE slug = 'gong-kinh' AND is_active = 1 LIMIT 1");
-    $catStmt->execute();
-    $category = $catStmt->fetch() ?: null;
-}
+
 
 if ($category) {
     $categoryIds[] = (int) $category['id'];
@@ -131,15 +127,22 @@ if ($category) {
 }
 
 $sidebarParentId = $categoryParentId;
-$subcatStmt = $db->prepare(
-    'SELECT c.id, c.name, c.slug, COUNT(p.id) AS products_count
+$subcatSql = 'SELECT c.id, c.name, c.slug, COUNT(p.id) AS products_count
      FROM categories c
      LEFT JOIN products p ON p.category_id = c.id AND p.status = "active"
-     WHERE c.is_active = 1 AND c.parent_id = :parent_id
-     GROUP BY c.id
-     ORDER BY c.sort_order ASC, c.id ASC'
-);
-$subcatStmt->execute(['parent_id' => (int) $sidebarParentId]);
+     WHERE c.is_active = 1 ';
+if ($sidebarParentId !== null) {
+    $subcatSql .= ' AND c.parent_id = :parent_id';
+} else {
+    $subcatSql .= ' AND c.parent_id IS NULL';
+}
+$subcatSql .= ' GROUP BY c.id ORDER BY c.sort_order ASC, c.id ASC';
+$subcatStmt = $db->prepare($subcatSql);
+if ($sidebarParentId !== null) {
+    $subcatStmt->execute(['parent_id' => (int) $sidebarParentId]);
+} else {
+    $subcatStmt->execute();
+}
 $subcategories = $subcatStmt->fetchAll();
 
 $allowedCategoryIds = $categoryIds;
@@ -165,8 +168,11 @@ if ($allowedCategoryIds !== []) {
 }
 
 if ($keyword !== '') {
-    $where[] = '(p.name LIKE :keyword OR p.brand LIKE :keyword OR p.short_description LIKE :keyword OR c.name LIKE :keyword)';
-    $params['keyword'] = '%' . $keyword . '%';
+    $where[] = '(p.name LIKE :kw1 OR p.brand LIKE :kw2 OR p.short_description LIKE :kw3 OR c.name LIKE :kw4)';
+    $params['kw1'] = '%' . $keyword . '%';
+    $params['kw2'] = '%' . $keyword . '%';
+    $params['kw3'] = '%' . $keyword . '%';
+    $params['kw4'] = '%' . $keyword . '%';
 }
 
 if ($shapeFilters !== []) {
@@ -285,12 +291,13 @@ function lumina_distinct_options(PDO $db, string $column, array $categoryIds): a
 $shapeOptions = lumina_distinct_options($db, 'shape', $categoryIds);
 $materialOptions = lumina_distinct_options($db, 'material', $categoryIds);
 
-$categoryName = $category['name'] ?? 'Gọng kính';
-$categorySlug = $category['slug'] ?? 'gong-kinh';
+$categoryName = $category['name'] ?? 'Cửa hàng';
+$categorySlug = $category['slug'] ?? 'cua-hang';
 $defaultDescriptions = [
     'gong-kinh' => 'Khám phá bộ sưu tập gọng kính được chế tác với độ chính xác cao, kết hợp giữa phong cách cổ điển và công nghệ vật liệu hiện đại.',
     'kinh-mat' => 'Khám phá bộ sưu tập kính mát cao cấp với thiết kế tinh tế, bảo vệ mắt tốt và phù hợp nhiều phong cách.',
     'trong-kinh' => 'Lựa chọn tròng kính phù hợp với nhu cầu sử dụng hằng ngày: chống ánh sáng xanh, đổi màu, siêu mỏng và đa tròng.',
+    'cua-hang' => 'Khám phá tất cả sản phẩm kính mắt thời trang và phụ kiện tại LUMINA.',
 ];
 $description = trim((string) ($category['description'] ?? ''));
 if ($description === '') {
@@ -327,13 +334,62 @@ $pageDescription = $description;
 require_once BASE_PATH . '/app/views/partials/head.php';
 require_once BASE_PATH . '/app/views/partials/header.php';
 ?>
+<style>
+/* Hero banner for product category pages */
+.cat-hero {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  max-height: 340px;
+  background: #1a2e4a;
+}
+.cat-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  max-height: 340px;
+}
+.cat-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(26,46,74,.55) 0%, rgba(26,46,74,.05) 60%);
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(1.5rem, 5vw, 5rem);
+}
+.cat-hero-text {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.cat-hero-text h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -.01em;
+}
+</style>
+
+<?php
+// Map category slug to banner image filename
+$heroBannerMap = [
+    'cua-hang'  => 'cua_hang.jpg',
+    'gong-kinh' => 'gong-kinh.jpg',
+    'kinh-mat'  => 'kinh-mat.png',
+    'trong-kinh'=> 'trong-kinh.png',
+];
+$heroBanner = $heroBannerMap[$categorySlug] ?? null;
+?>
+<?php if ($heroBanner): ?>
+<div class="cat-hero">
+  <img src="<?= e(APP_URL) ?>/assets/images/<?= e($heroBanner) ?>" alt="<?= e($categoryName) ?>">
+</div>
+<?php endif; ?>
+
 <main class="atelier-page">
   <div class="atelier-main">
-    <header class="atelier-page-head">
-      <span class="atelier-kicker">LUMINA Optical Atelier</span>
-      <h1 class="atelier-title"><?= e($categoryName) ?></h1>
-      <p class="atelier-description"><?= e($description) ?></p>
-    </header>
+
 
     <!-- Horizontal Filter Bar -->
     <form class="filter-bar-form" action="<?= e(APP_URL) ?>/products.php" method="get" id="atelierFilterForm">

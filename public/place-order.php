@@ -336,6 +336,52 @@ try {
     remember_recent_order_code($orderCode);
     grant_order_access($orderCode);
 
+    if ($input['payment_method'] === 'vnpay') {
+        $vnp_TxnRef = $orderCode;
+        $vnp_OrderInfo = 'Thanh toan don hang ' . $orderCode;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = (int)($totalAmount * 100);
+        $vnp_Locale = 'vn';
+        $vnp_IpAddr = $_SERVER['REMOTE_ADDR'] ?: '127.0.0.1';
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => VNP_TMN_CODE,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => VNP_RETURN_URL,
+            "vnp_TxnRef" => $vnp_TxnRef,
+        );
+
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+        }
+
+        $vnp_Url = VNP_URL . "?" . $hashdata;
+        if (defined('VNP_HASH_SECRET')) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, VNP_HASH_SECRET);
+            $vnp_Url .= '&vnp_SecureHash=' . $vnpSecureHash;
+        }
+
+        header('Location: ' . $vnp_Url);
+        exit;
+    }
+
     $_SESSION['cart'] = [];
     clear_old_input();
     flash_set('checkout_notice', 'Đặt hàng thành công. Hệ thống đã tạo đơn hàng cho bạn.');

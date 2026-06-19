@@ -83,8 +83,8 @@ try {
         redirect_order_detail($orderId);
     }
 
-    $currentUser = auth_user();
-    $actorId = (int) ($currentUser['id'] ?? 0);
+    $currentUser = current_user() ?: (function_exists('auth_user') ? auth_user() : null);
+    $actorId = !empty($currentUser['id']) ? (int) $currentUser['id'] : null;
     $actorName = (string) ($currentUser['full_name'] ?? $currentUser['email'] ?? 'Admin');
 
     $db->beginTransaction();

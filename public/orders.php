@@ -25,15 +25,25 @@ $baseOrderSelect = "SELECT o.id, o.order_code, o.order_type, o.status, o.custome
                     LEFT JOIN order_items oi ON oi.order_id = o.id";
 
 if ($currentUser && !empty($currentUser['id'])) {
+    $whereConditions = ['o.user_id = :user_id'];
+    $params = [':user_id' => (int) $currentUser['id']];
+    if (!empty($currentUser['email'])) {
+        $whereConditions[] = 'o.customer_email = :email';
+        $params[':email'] = $currentUser['email'];
+    }
+    if (!empty($currentUser['phone'])) {
+        $whereConditions[] = 'o.customer_phone = :phone';
+        $params[':phone'] = $currentUser['phone'];
+    }
+    $whereSql = implode(' OR ', $whereConditions);
+
     $recentStmt = $db->prepare(
         $baseOrderSelect . "
-         WHERE o.user_id = :user_id
+         WHERE $whereSql
          GROUP BY o.id
          ORDER BY o.created_at DESC"
     );
-    $recentStmt->execute([
-        ':user_id' => (int) $currentUser['id'],
-    ]);
+    $recentStmt->execute($params);
     $recentOrders = $recentStmt->fetchAll();
 } else {
     $recentCodes = recent_order_codes();
@@ -56,16 +66,16 @@ if ($currentUser && !empty($currentUser['id'])) {
 
 if ($searched) {
     if ($currentUser && !empty($currentUser['id'])) {
+        // Note: For logged-in users, we still might want to allow searching their own orders, 
+        // but currently it just fetches all their orders again. We'll keep the same WHERE clause.
         $sql = $baseOrderSelect . "
-            WHERE o.user_id = :user_id
+            WHERE $whereSql
             GROUP BY o.id
             ORDER BY o.created_at DESC
             LIMIT 20";
 
         $searchStmt = $db->prepare($sql);
-        $searchStmt->execute([
-            ':user_id' => (int) $currentUser['id'],
-        ]);
+        $searchStmt->execute($params);
         $searchResults = $searchStmt->fetchAll();
     } else {
         if ($input['email'] !== '' && !filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
