@@ -47,24 +47,7 @@ try {
         throw new RuntimeException('Thiếu mã đơn hàng cần cập nhật.');
     }
 
-    if ($newStatus === 'canceled') {
-        $newStatus = 'cancelled';
-    }
-
-    $allowedStatuses = [
-        'pending',
-        'awaiting_stock',
-        'checking_prescription',
-        'confirmed',
-        'processing',
-        'shipping',
-        'completed',
-        'cancelled',
-    ];
-
-    if (!in_array($newStatus, $allowedStatuses, true)) {
-        throw new RuntimeException('Trạng thái đơn hàng không hợp lệ.');
-    }
+    $actionType = $_POST['action_type'] ?? '';
 
     $orderStmt = $db->prepare('SELECT id, order_code, status FROM orders WHERE id = :order_id LIMIT 1');
     $orderStmt->execute([
@@ -77,8 +60,30 @@ try {
     }
 
     $oldStatus = (string) ($order['status'] ?? '');
+    $resetCancelRequest = false;
 
-    if ($oldStatus === $newStatus) {
+    if ($actionType === 'approve_cancel') {
+        $newStatus = 'cancelled';
+        $note = 'Chấp nhận yêu cầu hủy từ khách hàng.';
+        $resetCancelRequest = true;
+    } elseif ($actionType === 'reject_cancel') {
+        $newStatus = $oldStatus;
+        $note = 'Từ chối yêu cầu hủy của khách hàng.';
+        $resetCancelRequest = true;
+    } else {
+        if ($newStatus === 'canceled') {
+            $newStatus = 'cancelled';
+        }
+        $allowedStatuses = [
+            'pending', 'awaiting_stock', 'checking_prescription', 'confirmed', 
+            'processing', 'shipping', 'completed', 'cancelled', 'refunded',
+        ];
+        if (!in_array($newStatus, $allowedStatuses, true)) {
+            throw new RuntimeException('Trạng thái đơn hàng không hợp lệ.');
+        }
+    }
+
+    if ($oldStatus === $newStatus && !$resetCancelRequest) {
         add_flash('info', 'Đơn hàng đã ở trạng thái này.');
         redirect_order_detail($orderId);
     }
@@ -89,15 +94,16 @@ try {
 
     $db->beginTransaction();
 
-    $updateStmt = $db->prepare('
-        UPDATE orders
-        SET status = :new_status,
-            updated_at = NOW()
-        WHERE id = :order_id
-        LIMIT 1
-    ');
+    $updateSql = 'UPDATE orders SET status = :new_status, handled_by = COALESCE(handled_by, :actor_id), updated_at = NOW()';
+    if ($resetCancelRequest) {
+        $updateSql .= ', cancel_requested = 0';
+    }
+    $updateSql .= ' WHERE id = :order_id LIMIT 1';
+
+    $updateStmt = $db->prepare($updateSql);
     $updateStmt->execute([
         ':new_status' => $newStatus,
+        ':actor_id' => $actorId,
         ':order_id' => $orderId,
     ]);
 

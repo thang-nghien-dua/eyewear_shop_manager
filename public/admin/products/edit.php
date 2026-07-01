@@ -67,7 +67,7 @@ require BASE_PATH . '/app/views/partials/admin-head.php';
             </div>
 
             <div class="admin-panel">
-                <form action="<?= e(APP_URL) ?>/admin/products/save.php" method="post" class="form-grid two-cols">
+                <form action="<?= e(APP_URL) ?>/admin/products/save.php" method="post" enctype="multipart/form-data" class="form-grid two-cols">
                     <input type="hidden" name="id" value="<?= (int)$product['id'] ?>">
 
                     <div class="form-field">
@@ -132,8 +132,17 @@ require BASE_PATH . '/app/views/partials/admin-head.php';
                         <input type="number" step="0.01" name="compare_at_price" value="<?= e((string)$product['compare_at_price']) ?>">
                     </div>
                     <div class="form-field full-width">
-                        <label>Thumbnail URL</label>
-                        <input type="text" name="thumbnail" value="<?= e((string)$product['thumbnail']) ?>">
+                        <label>Ảnh sản phẩm (Thumbnail)</label>
+                        <?php if (!empty($product['thumbnail'])): ?>
+                            <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                                <img src="<?= e(APP_URL . $product['thumbnail']) ?>" alt="Thumbnail" style="max-height: 80px; border-radius: 4px; border: 1px solid #ddd;">
+                                <span style="font-size: 0.9em; color: #666;">Ảnh hiện tại: <?= e($product['thumbnail']) ?></span>
+                                <input type="hidden" name="existing_thumbnail" value="<?= e((string)$product['thumbnail']) ?>">
+                            </div>
+                        <?php endif; ?>
+                        <input type="file" name="thumbnail_file" accept="image/*" style="margin-bottom: 8px;">
+                        <span style="font-size: 0.85em; color: #888;">Hoặc nhập URL ảnh trực tiếp nếu không tải lên từ máy:</span>
+                        <input type="text" name="thumbnail_url" placeholder="/assets/images/products/example.jpg" value="<?= e((string)$product['thumbnail']) ?>" style="margin-top: 4px;">
                     </div>
                     <div class="form-field">
                         <label>Prescription supported</label>

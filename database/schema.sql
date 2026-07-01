@@ -324,6 +324,8 @@ CREATE TABLE orders (
     total_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     payment_method ENUM('cod', 'bank_transfer', 'momo', 'vnpay', 'other') NOT NULL DEFAULT 'cod',
     payment_status ENUM('unpaid', 'paid', 'partially_paid', 'failed', 'refunded') NOT NULL DEFAULT 'unpaid',
+    cancel_requested TINYINT(1) NOT NULL DEFAULT 0,
+    cancel_reason VARCHAR(255) NULL,
     prescription_id BIGINT UNSIGNED NULL,
     confirmed_at DATETIME NULL,
     shipped_at DATETIME NULL,

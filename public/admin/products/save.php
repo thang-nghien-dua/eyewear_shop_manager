@@ -29,7 +29,32 @@ $shape = trim((string)($_POST['shape'] ?? ''));
 $defaultPrice = (float)($_POST['default_price'] ?? 0);
 $compareAtPriceRaw = trim((string)($_POST['compare_at_price'] ?? ''));
 $compareAtPrice = $compareAtPriceRaw !== '' ? (float)$compareAtPriceRaw : null;
-$thumbnail = trim((string)($_POST['thumbnail'] ?? ''));
+
+// Xử lý upload ảnh từ máy hoặc URL
+$thumbnail = trim((string)($_POST['existing_thumbnail'] ?? $_POST['thumbnail_url'] ?? ''));
+if (isset($_FILES['thumbnail_file']) && $_FILES['thumbnail_file']['error'] === UPLOAD_ERR_OK) {
+    $fileTmpPath = $_FILES['thumbnail_file']['tmp_name'];
+    $fileName = $_FILES['thumbnail_file']['name'];
+    $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    
+    // Chỉ cho phép định dạng ảnh hợp lệ
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    if (in_array($fileExtension, $allowedExtensions)) {
+        $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+        $uploadFileDir = PUBLIC_PATH . '/assets/images/products/';
+        
+        // Tạo thư mục nếu chưa tồn tại
+        if (!is_dir($uploadFileDir)) {
+            mkdir($uploadFileDir, 0755, true);
+        }
+        
+        $dest_path = $uploadFileDir . $newFileName;
+        if (move_uploaded_file($fileTmpPath, $dest_path)) {
+            $thumbnail = '/assets/images/products/' . $newFileName;
+        }
+    }
+}
+
 $isPrescriptionSupported = (int)($_POST['is_prescription_supported'] ?? 0);
 $has3dModel = (int)($_POST['has_3d_model'] ?? 0);
 $status = trim((string)($_POST['status'] ?? 'active'));

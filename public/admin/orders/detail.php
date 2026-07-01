@@ -397,6 +397,34 @@ include BASE_PATH . '/app/views/partials/admin-head.php';
                 </section>
 
                 <aside class="admin-detail-side">
+                    <?php if (!empty($order['cancel_requested']) && $order['status'] !== 'cancelled'): ?>
+                        <div class="admin-panel" style="border: 2px solid #ef4444; background: #fef2f2; margin-bottom: 1.5rem;">
+                            <div class="admin-panel-head compact">
+                                <div>
+                                    <h2 style="color: #b91c1c; margin:0;">⚠️ Yêu cầu hủy đơn</h2>
+                                </div>
+                            </div>
+                            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #991b1b;">
+                                Khách hàng đã gửi yêu cầu hủy đơn hàng này.
+                                <?php if (!empty($order['cancel_reason'])): ?>
+                                    <br><br><strong>Lý do:</strong> <?= e($order['cancel_reason']) ?>
+                                <?php endif; ?>
+                            </p>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                <form action="<?= e(APP_URL) ?>/admin/orders/update-status.php" method="post" style="flex:1;">
+                                    <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
+                                    <input type="hidden" name="action_type" value="approve_cancel">
+                                    <button type="submit" class="btn btn-primary" style="background: #ef4444; border-color: #ef4444; width: 100%; justify-content:center;">Chấp nhận hủy</button>
+                                </form>
+                                <form action="<?= e(APP_URL) ?>/admin/orders/update-status.php" method="post" style="flex:1;">
+                                    <input type="hidden" name="order_id" value="<?= (int) $order['id'] ?>">
+                                    <input type="hidden" name="action_type" value="reject_cancel">
+                                    <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content:center;">Từ chối</button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <div class="admin-panel sticky-card">
                         <div class="admin-panel-head compact">
                             <div>

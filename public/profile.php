@@ -110,12 +110,22 @@ try {
     $pendingReturns = $pendingRetStmt->fetchAll();
 
     // Đã gửi yêu cầu
+    $doneRetConditions = ['o.user_id = :user_id'];
+    if (!empty($user['email'])) {
+        $doneRetConditions[] = 'o.customer_email = :email';
+    }
+    if (!empty($user['phone'])) {
+        $doneRetConditions[] = 'o.customer_phone = :phone';
+    }
+    $doneRetWhereSql = implode(' OR ', $doneRetConditions);
+
     $doneRetStmt = $db->prepare("
         SELECT o.id AS order_id, o.order_code, o.total_amount, o.created_at AS order_date,
-               rr.id AS rr_id, rr.request_type, rr.status AS rr_status, rr.reason, rr.created_at AS rr_date
+               rr.id AS rr_id, rr.request_type, rr.status AS rr_status, rr.reason, rr.created_at AS rr_date,
+               rr.resolution_note
         FROM orders o
         INNER JOIN return_requests rr ON rr.order_id = o.id
-        WHERE ($whereSql)
+        WHERE ($doneRetWhereSql)
         ORDER BY rr.created_at DESC
     ");
     $doneRetStmt->execute($params);
@@ -697,9 +707,14 @@ require_once BASE_PATH . '/app/views/partials/header.php';
                                             <span class="ret-status-badge <?= $retStatusClass ?>"><?= e($retStatusLabel) ?></span>
                                         </div>
                                         <?php if (!empty($ret['reason'])): ?>
-                                            <div style="font-size:.82rem;color:#4a5568;"><?= e(mb_substr($ret['reason'],0,100)) ?><?= mb_strlen($ret['reason'])>100?'...':'' ?></div>
+                                            <div style="font-size:.82rem;color:#4a5568;"><strong>Lý do gửi:</strong> <?= e($ret['reason']) ?></div>
                                         <?php endif; ?>
-                                        <a href="<?= e(APP_URL) ?>/order-detail.php?code=<?= e($ret['order_code']) ?>" style="font-size:.78rem;color:#d4880a;font-weight:700;text-decoration:none;">Xem đơn hàng &rarr;</a>
+                                        <?php if (!empty($ret['resolution_note'])): ?>
+                                            <div style="font-size:.82rem; color:#b91c1c; background: #fef2f2; padding: 0.6rem; border-radius: 6px; border: 1.5px solid #fca5a5; width: 100%; margin: 0.25rem 0;">
+                                                <strong>Phản hồi từ cửa hàng:</strong> <?= e($ret['resolution_note']) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <a href="<?= e(APP_URL) ?>/order-detail.php?code=<?= e($ret['order_code']) ?>" style="font-size:.78rem;color:#d4880a;font-weight:700;text-decoration:none;margin-top:0.25rem;">Xem đơn hàng &rarr;</a>
                                     </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>

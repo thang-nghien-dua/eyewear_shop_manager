@@ -39,6 +39,20 @@ final class Database
             // sẽ lấy giờ theo UTC+7 thay vì UTC trong container.
             self::$connection->exec("SET time_zone = '+07:00'");
 
+            // Tự động kiểm tra và nâng cấp schema nếu thiếu cột cancel_requested / cancel_reason
+            try {
+                $check = self::$connection->query("SHOW COLUMNS FROM `orders` LIKE 'cancel_requested'")->fetch();
+                if (!$check) {
+                    self::$connection->exec("ALTER TABLE `orders` ADD COLUMN `cancel_requested` TINYINT(1) NOT NULL DEFAULT 0 AFTER `payment_status`;");
+                }
+                $checkReason = self::$connection->query("SHOW COLUMNS FROM `orders` LIKE 'cancel_reason'")->fetch();
+                if (!$checkReason) {
+                    self::$connection->exec("ALTER TABLE `orders` ADD COLUMN `cancel_reason` VARCHAR(255) NULL AFTER `cancel_requested`;");
+                }
+            } catch (Throwable $migrationException) {
+                // Tự động bỏ qua lỗi nếu bảng hoặc quyền không cho phép
+            }
+
             return self::$connection;
         } catch (PDOException $exception) {
             http_response_code(500);
