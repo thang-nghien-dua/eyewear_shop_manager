@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../../app/config/config.php';
 require_once BASE_PATH . '/app/helpers/functions.php';
 require_once BASE_PATH . '/app/middleware/auth.php';
 
-admin_only();
+require_staff();
 
 $db = Database::connect();
 

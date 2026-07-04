@@ -107,11 +107,6 @@ require_once BASE_PATH . '/app/views/partials/header.php';
 
             <div class="auth-footnote">
                 <p>Chưa có tài khoản? <a href="<?= e(APP_URL) ?>/register.php">Đăng ký khách hàng</a></p>
-                <p class="muted-text">Admin demo: <strong>Admin1@gmail.com</strong> / <strong>123456</strong></p>
-                <p class="muted-text">Manager demo: <strong>Manager1@gmail.com</strong> / <strong>123456</strong></p>
-                <p class="muted-text">Operation demo: <strong>Operation1@gmail.com</strong> / <strong>123456</strong></p>
-                <p class="muted-text">Sale demo: <strong>Sale1@gmail.com</strong> / <strong>123456</strong></p>
-                <p class="muted-text">customer demo: <strong>Customer@gmail.com</strong> / <strong>123456</strong></p>
             </div>
         </section>
     </div>

@@ -6,8 +6,9 @@ ensure_cart_session();
 
 if (isset($_GET['remove'])) {
     $removeId = (int) $_GET['remove'];
-    if (isset($_SESSION['cart'][$removeId])) {
-        unset($_SESSION['cart'][$removeId]);
+    $cartKey = 'v_' . $removeId;
+    if (isset($_SESSION['cart'][$cartKey])) {
+        unset($_SESSION['cart'][$cartKey]);
     }
 
     header('Location: ' . APP_URL . '/cart.php?removed=1');
@@ -20,17 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_cart'])) {
     foreach ($quantities as $variantId => $quantity) {
         $variantId = (int) $variantId;
         $quantity = (int) $quantity;
+        $cartKey = 'v_' . $variantId;
 
-        if (!isset($_SESSION['cart'][$variantId])) {
+        if (!isset($_SESSION['cart'][$cartKey])) {
             continue;
         }
 
         if ($quantity <= 0) {
-            unset($_SESSION['cart'][$variantId]);
+            unset($_SESSION['cart'][$cartKey]);
             continue;
         }
 
-        $_SESSION['cart'][$variantId]['quantity'] = min(10, $quantity);
+        $_SESSION['cart'][$cartKey]['quantity'] = min(10, $quantity);
     }
 
     header('Location: ' . APP_URL . '/cart.php?updated=1');

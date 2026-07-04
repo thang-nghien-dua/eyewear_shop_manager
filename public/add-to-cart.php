@@ -114,7 +114,7 @@ if (isAjax()) {
 $buyNow = isset($_POST['buynow']) && $_POST['buynow'] === '1';
 
 if ($buyNow) {
-    header('Location: ' . APP_URL . '/cart.php');
+    header('Location: ' . APP_URL . '/checkout.php');
 } else {
     header('Location: ' . APP_URL . '/cart.php?added=1');
 }

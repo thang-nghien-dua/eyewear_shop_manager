@@ -284,6 +284,34 @@ if (!function_exists('is_admin_user')) {
     }
 }
 
+// Chỉ role 'admin' thuần túy (dùng guard các trang chỉ admin được vào)
+if (!function_exists('is_pure_admin')) {
+    function is_pure_admin(): bool
+    {
+        return (auth_user()['role_name'] ?? '') === 'admin';
+    }
+}
+
+// Nhân viên / quản lý (manager, sales, operations) - KHÔNG phải admin
+if (!function_exists('is_staff_user')) {
+    function is_staff_user(): bool
+    {
+        return in_array(auth_user()['role_name'] ?? '', ['manager', 'sales', 'operations'], true);
+    }
+}
+
+// Yêu cầu phải là nhân viên hoặc admin mới vào được
+if (!function_exists('require_staff')) {
+    function require_staff(): void
+    {
+        if (is_admin_user()) {
+            return; // admin + staff đều được
+        }
+        add_flash('warning', 'Bạn cần đăng nhập bằng tài khoản nhân viên.');
+        redirect_to('/login.php');
+    }
+}
+
 if (!function_exists('login_user')) {
     function login_user(array $user): void
     {
@@ -331,8 +359,13 @@ if (!function_exists('require_login')) {
 if (!function_exists('require_admin')) {
     function require_admin(): void
     {
-        if (is_admin_user()) {
+        // Chỉ role 'admin' mới vào được các trang require_admin
+        if (is_pure_admin()) {
             return;
+        }
+        // Nếu là staff (manager/sales/operations) → chuyển về trang của họ
+        if (is_staff_user()) {
+            redirect_to('/admin/orders/index.php');
         }
         $_SESSION['intended_url'] = $_SERVER['REQUEST_URI'] ?? '/admin/';
         add_flash('warning', 'Bạn cần đăng nhập bằng tài khoản quản trị.');

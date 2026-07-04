@@ -317,23 +317,14 @@ include BASE_PATH . '/app/views/partials/header.php';
                                      <p style="font-size: 0.85rem; margin-top: 0.25rem;">Đang chờ cửa hàng xác nhận.</p>
                                  </div>
                              <?php else: ?>
-                                 <form action="<?= e(APP_URL) ?>/cancel-order-action.php" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn thực hiện hành động này?');">
-                                     <input type="hidden" name="order_code" value="<?= e($order['order_code']) ?>">
-                                     
-                                     <div style="margin-bottom: 1rem;">
-                                         <label for="cancel_reason" style="display:block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600;">Lý do hủy (tùy chọn)</label>
-                                         <textarea id="cancel_reason" name="cancel_reason" rows="2" style="width: 100%; border: 1.5px solid #dbe4e7; border-radius: 6px; padding: 0.5rem;"></textarea>
-                                     </div>
-
+                                 <div style="margin-top: 1rem;">
                                      <?php if ($order['payment_status'] === 'unpaid' && in_array($order['status'], ['pending', 'awaiting_stock', 'checking_prescription'])): ?>
-                                         <input type="hidden" name="action" value="cancel">
-                                         <button type="submit" class="btn btn-primary" style="width: 100%; background: #ef4444; border-color: #ef4444; justify-content: center; padding: 0.75rem;">Hủy đơn hàng ngay</button>
+                                         <a href="<?= e(APP_URL) ?>/cancel-order.php?code=<?= e($order['order_code']) ?>&action=cancel" class="btn btn-primary" style="width: 100%; background: #ef4444; border-color: #ef4444; justify-content: center; padding: 0.75rem; text-align: center; display: block; text-decoration: none;">Hủy đơn hàng ngay</a>
                                      <?php else: ?>
-                                         <input type="hidden" name="action" value="request_cancel">
-                                         <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem;">Yêu cầu hủy đơn</button>
+                                         <a href="<?= e(APP_URL) ?>/cancel-order.php?code=<?= e($order['order_code']) ?>&action=request_cancel" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.75rem; text-align: center; display: block; text-decoration: none;">Yêu cầu hủy đơn</a>
                                          <p style="font-size: 0.8rem; color: #718096; margin-top: 0.5rem; text-align: center;">Đơn hàng đã qua khâu xác nhận nên cần cửa hàng duyệt yêu cầu hủy.</p>
                                      <?php endif; ?>
-                                 </form>
+                                 </div>
                              <?php endif; ?>
                          </section>
                      <?php endif; ?>

@@ -308,59 +308,59 @@ include BASE_PATH . '/app/views/partials/admin-head.php';
 
             <!-- KPI Grid – Row 1: Đơn hàng -->
             <div class="dash-kpi-grid">
-                <div class="dash-kpi purple">
+                <a href="<?= e(APP_URL) ?>/admin/orders/index.php" class="dash-kpi purple" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-shopping-bag icon"></i></div>
                     <div>
                         <label>Tổng đơn</label>
                         <strong><?= (int)$summary['total_orders'] ?></strong>
                         <small>Tất cả đơn trong hệ thống</small>
                     </div>
-                </div>
-                <div class="dash-kpi amber">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/orders/index.php?status=pending" class="dash-kpi amber" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-time-fast icon"></i></div>
                     <div>
                         <label>Cần xử lý</label>
                         <strong><?= (int)$summary['pending_like_orders'] ?></strong>
                         <small>Chờ xác nhận / kiểm tra</small>
                     </div>
-                </div>
-                <div class="dash-kpi blue">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/orders/index.php?status=confirmed" class="dash-kpi blue" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-truck-side icon"></i></div>
                     <div>
                         <label>Đang vận hành</label>
                         <strong><?= (int)$summary['in_progress_orders'] ?></strong>
                         <small>Đang xử lý / giao hàng</small>
                     </div>
-                </div>
-                <div class="dash-kpi green">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/orders/index.php?status=completed" class="dash-kpi green" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-badge-check icon"></i></div>
                     <div>
                         <label>Hoàn tất</label>
                         <strong><?= (int)$summary['completed_orders'] ?></strong>
                         <small>Đã giao thành công</small>
                     </div>
-                </div>
+                </a>
             </div>
 
             <!-- KPI Grid – Row 2: Doanh thu + Khách hàng -->
             <div class="dash-kpi-grid" style="margin-bottom:1.75rem;">
-                <div class="dash-kpi green">
+                <a href="<?= e(APP_URL) ?>/admin/reports/index.php" class="dash-kpi green" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-usd icon"></i></div>
                     <div>
                         <label>Doanh thu hôm nay</label>
                         <strong><?= format_price($today['today_revenue']) ?></strong>
                         <small><?= (int)$today['today_orders'] ?> đơn phát sinh hôm nay</small>
                     </div>
-                </div>
-                <div class="dash-kpi indigo">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/reports/index.php" class="dash-kpi indigo" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-chart-histogram icon"></i></div>
                     <div>
                         <label>Doanh thu tháng <?= $now->format('m') ?></label>
                         <strong><?= format_price($month['month_revenue']) ?></strong>
                         <small><?= (int)$month['month_orders'] ?> đơn trong tháng</small>
                     </div>
-                </div>
-                <div class="dash-kpi purple">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/users/index.php" class="dash-kpi purple" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-users icon"></i></div>
                     <div>
                         <label>Khách hàng</label>
@@ -373,15 +373,15 @@ include BASE_PATH . '/app/views/partials/admin-head.php';
                             <?php endif; ?>
                         </small>
                     </div>
-                </div>
-                <div class="dash-kpi blue">
+                </a>
+                <a href="<?= e(APP_URL) ?>/admin/products/index.php" class="dash-kpi blue" style="text-decoration:none;cursor:pointer;">
                     <div class="dash-kpi-ico"><i class="fi fi-rr-box icon"></i></div>
                     <div>
                         <label>Sản phẩm đang bán</label>
                         <strong><?= (int)$entities['active_products'] ?></strong>
                         <small><?= (int)$entities['active_categories'] ?> danh mục hoạt động</small>
                     </div>
-                </div>
+                </a>
             </div>
 
             <!-- Main 2-col Grid -->

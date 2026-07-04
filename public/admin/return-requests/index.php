@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../../app/config/config.php';
 require_once BASE_PATH . '/app/helpers/functions.php';
 require_once BASE_PATH . '/app/middleware/auth.php';
 
-admin_only(); // Phải là admin/manager/sales/operations mới vào được panel admin chung
+require_staff(); // Admin + nhân viên đều vào được trang đổi trả/bảo hành
 
 $db = Database::connect();
 $currentUser = auth_user();
@@ -113,7 +113,14 @@ $adminActive = 'return_requests';
 include BASE_PATH . '/app/views/partials/admin-head.php';
 ?>
 <div class="admin-shell">
-    <?php include BASE_PATH . '/app/views/partials/admin-sidebar.php'; ?>
+    <?php
+    $_sRole = (function_exists('auth_user') ? auth_user() : null)['role_name'] ?? '';
+    if (in_array($_sRole, ['manager', 'sales', 'operations'], true)) {
+        include BASE_PATH . '/app/views/partials/staff-sidebar.php';
+    } else {
+        include BASE_PATH . '/app/views/partials/admin-sidebar.php';
+    }
+    ?>
 
     <main class="admin-main">
         <?php include BASE_PATH . '/app/views/partials/admin-topbar.php'; ?>
