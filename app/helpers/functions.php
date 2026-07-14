@@ -243,6 +243,51 @@ if (!function_exists('customer_can_access_order')) {
     }
 }
 
+if (!function_exists('restore_order_stock')) {
+    function restore_order_stock(PDO $db, int $orderId): void
+    {
+        if ($orderId <= 0) {
+            return;
+        }
+
+        $itemsStmt = $db->prepare(
+            'SELECT id, product_variant_id, quantity, variant_snapshot
+             FROM order_items
+             WHERE order_id = :order_id'
+        );
+        $itemsStmt->execute(['order_id' => $orderId]);
+
+        $restoreStmt = $db->prepare(
+            'UPDATE product_variants
+             SET stock_quantity = stock_quantity + :quantity
+             WHERE id = :variant_id'
+        );
+        $markRestoredStmt = $db->prepare(
+            "UPDATE order_items
+             SET variant_snapshot = JSON_SET(COALESCE(variant_snapshot, JSON_OBJECT()), '$.stock_decreased', false)
+             WHERE id = :id"
+        );
+
+        foreach ($itemsStmt->fetchAll() as $item) {
+            $itemId = (int) ($item['id'] ?? 0);
+            $variantId = (int) ($item['product_variant_id'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 0);
+            $variantSnapshot = json_decode((string) ($item['variant_snapshot'] ?? ''), true);
+            $stockWasDecreased = is_array($variantSnapshot) && !empty($variantSnapshot['stock_decreased']);
+
+            if ($itemId <= 0 || $variantId <= 0 || $quantity <= 0 || !$stockWasDecreased) {
+                continue;
+            }
+
+            $restoreStmt->execute([
+                'quantity' => $quantity,
+                'variant_id' => $variantId,
+            ]);
+            $markRestoredStmt->execute(['id' => $itemId]);
+        }
+    }
+}
+
 if (!function_exists('user_role_label')) {
     function user_role_label(?string $role): string
     {

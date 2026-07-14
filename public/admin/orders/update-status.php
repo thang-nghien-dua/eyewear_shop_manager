@@ -107,6 +107,10 @@ try {
         ':order_id' => $orderId,
     ]);
 
+    if ($oldStatus !== 'cancelled' && $newStatus === 'cancelled') {
+        restore_order_stock($db, $orderId);
+    }
+
     // Ghi log trạng thái nếu bảng order_status_logs tồn tại.
     // Viết theo kiểu tự dò cột để khớp với nhiều phiên bản schema khác nhau.
     try {

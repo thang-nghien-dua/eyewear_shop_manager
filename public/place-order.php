@@ -248,6 +248,13 @@ try {
          )'
     );
 
+    $decreaseStockStmt = $db->prepare(
+        'UPDATE product_variants
+         SET stock_quantity = stock_quantity - :quantity
+         WHERE id = :variant_id
+           AND stock_quantity >= :quantity'
+    );
+
     $hasPreorderItem = false;
 
     foreach ($cartItems as $cartItem) {
@@ -263,11 +270,28 @@ try {
         }
 
         // Kiểm tra xem biến thể này có phải là hàng preorder không
-        if ($variant['stock_quantity'] <= 0 && $variant['is_preorder_allowed'] == 1) {
+        $quantity = max(1, (int) ($cartItem['quantity'] ?? 1));
+        $stockQuantity = (int) ($variant['stock_quantity'] ?? 0);
+        $isPreorderAllowed = (int) ($variant['is_preorder_allowed'] ?? 0) === 1;
+        $stockDecreased = false;
+
+        if ($stockQuantity >= $quantity) {
+            $decreaseStockStmt->execute([
+                'quantity' => $quantity,
+                'variant_id' => (int) $variant['id'],
+            ]);
+
+            if ($decreaseStockStmt->rowCount() !== 1) {
+                throw new RuntimeException('San pham "' . $product['name'] . '" khong du so luong ton kho.');
+            }
+
+            $stockDecreased = true;
+        } elseif ($isPreorderAllowed) {
             $hasPreorderItem = true;
+        } else {
+            throw new RuntimeException('San pham "' . $product['name'] . '" chi con ' . $stockQuantity . ' san pham trong kho.');
         }
 
-        $quantity = max(1, (int) ($cartItem['quantity'] ?? 1));
         $unitPrice = (float) ($cartItem['price'] ?? $variant['price'] ?? $product['default_price']);
         $lineTotal = $unitPrice * $quantity;
 
@@ -284,6 +308,7 @@ try {
             'color' => $variant['color'],
             'size_label' => $variant['size_label'],
             'material' => $variant['material'],
+            'stock_decreased' => $stockDecreased,
         ], JSON_UNESCAPED_UNICODE);
 
         $insertOrderItemStmt->execute([

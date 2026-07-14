@@ -59,6 +59,8 @@ try {
         $updateStmt = $db->prepare('UPDATE orders SET status = "cancelled", updated_at = NOW() WHERE id = :id');
         $updateStmt->execute(['id' => $orderId]);
 
+        restore_order_stock($db, $orderId);
+
         // Ghi log
         $logStmt = $db->prepare('INSERT INTO order_status_logs (order_id, old_status, new_status, note, changed_by) VALUES (:id, :old, "cancelled", :note, :uid)');
         $logStmt->execute([
